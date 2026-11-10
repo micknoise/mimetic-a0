@@ -1,0 +1,853 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>cc0-sampler Short Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: full-screen slides; text column left, one animated canvas right; monochrome only */
+:root {
+  --bg: #ffffff;
+  --fg: #0b0b0b;
+  --fg-rgb: 11,11,11;
+  --bg-rgb: 255,255,255;
+  --mid: rgba(11,11,11,.58);
+  --faint: rgba(11,11,11,.14);
+  --sans: "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --ease: cubic-bezier(.2,.7,.1,1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0b0b; --fg: #f4f4f4; --fg-rgb: 244,244,244; --bg-rgb: 11,11,11;
+    --mid: rgba(244,244,244,.6); --faint: rgba(244,244,244,.16); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b0b0b; --fg: #f4f4f4; --fg-rgb: 244,244,244; --bg-rgb: 11,11,11;
+  --mid: rgba(244,244,244,.6); --faint: rgba(244,244,244,.16); color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--sans);
+  font-size: 16px; line-height: 1.5; overflow: hidden;
+  -webkit-font-smoothing: antialiased; transition: background .5s var(--ease), color .5s var(--ease);
+}
+.deck { position: fixed; inset: env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px) 0; }
+.slide {
+  position: absolute; inset: 0;
+  display: grid; grid-template-columns: minmax(0, 22rem) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
+  gap: clamp(1.5rem, 4vw, 4.5rem);
+  padding: clamp(1.5rem, 6vh, 4.5rem) clamp(16px, 5vw, 5rem) clamp(3.5rem, 9vh, 5.5rem);
+  opacity: 0; visibility: hidden; transform: translateY(14px);
+  transition: opacity .8s var(--ease), transform .8s var(--ease), visibility 0s linear .8s;
+}
+.slide.active { opacity: 1; visibility: visible; transform: none; transition: opacity .8s var(--ease), transform .8s var(--ease), visibility 0s; }
+.text { display: flex; flex-direction: column; justify-content: center; gap: 1.1rem; min-width: 0; }
+.viz { position: relative; min-width: 0; min-height: 0; }
+.viz canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.slide.active .text > * { animation: rise 1s var(--ease) both; animation-delay: calc(var(--i, 0) * 90ms + 120ms); }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+.eyebrow { font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--mid); }
+h1 { font-size: clamp(3rem, 8.5vw, 7.5rem); font-weight: 500; letter-spacing: -.045em; line-height: .95; margin: 0; }
+h2 { font-size: clamp(1.7rem, 3vw, 3rem); font-weight: 500; letter-spacing: -.025em; line-height: 1.12; margin: 0; text-wrap: balance; }
+p { margin: 0; color: var(--mid); max-width: 62ch; font-size: clamp(.95rem, 1.05vw, 1.06rem); }
+p strong, li strong { color: var(--fg); font-weight: 500; }
+ul.facts { list-style: none; margin: 0; padding: 0; display: grid; }
+ul.facts li { border-top: 1px solid var(--faint); padding-block: .55rem; font-size: clamp(.86rem, .95vw, .95rem); color: var(--mid); }
+ul.facts li:last-child { border-bottom: 1px solid var(--faint); }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--fg); }
+.eq { font-family: var(--mono); font-size: clamp(.9rem, 1.05vw, 1.05rem); display: grid; gap: .35rem; padding-block: .3rem; color: var(--fg); }
+.eq span { color: var(--mid); }
+.legend { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; font-family: var(--mono); font-size: .75rem; color: var(--mid); }
+.legend i { display: inline-block; width: .6rem; height: .6rem; border-radius: 50%; background: var(--fg); margin-right: .4rem; vertical-align: -.02rem; }
+.legend i.ring { background: transparent; border: 1px solid var(--fg); }
+.legend i.x { background: transparent; border-radius: 0; position: relative; }
+.legend i.x::before, .legend i.x::after { content: ""; position: absolute; left: 50%; top: -1px; width: 1px; height: .75rem; background: var(--mid); transform: rotate(45deg); }
+.legend i.x::after { transform: rotate(-45deg); }
+.note { font-family: var(--mono); font-size: .72rem; color: var(--mid); letter-spacing: .02em; }
+
+.slide.title { grid-template-columns: minmax(0,1fr); grid-template-rows: minmax(0,1fr) auto; }
+.slide.title .text { justify-content: end; gap: 1.2rem; }
+.slide.title p { max-width: 56ch; }
+
+.bar {
+  position: fixed; left: 0; right: 0; bottom: env(safe-area-inset-bottom,0px);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 0 clamp(16px, 5vw, 5rem); height: 3rem;
+  font-family: var(--mono); font-size: .72rem; color: var(--mid); letter-spacing: .06em; z-index: 5;
+}
+.bar .ctrl { display: flex; gap: .4rem; align-items: center; }
+.bar button {
+  font: inherit; color: var(--mid); background: none; border: 1px solid var(--faint); border-radius: 2px;
+  padding: .25rem .6rem; cursor: pointer; transition: color .3s, border-color .3s;
+}
+.bar button:hover { color: var(--fg); border-color: var(--fg); }
+.bar button:focus-visible { outline: 1px solid var(--fg); outline-offset: 2px; }
+.progress { position: fixed; left: 0; bottom: env(safe-area-inset-bottom,0px); height: 1px; background: var(--fg); width: 0; transition: width .8s var(--ease); z-index: 6; }
+.count { font-variant-numeric: tabular-nums; color: var(--fg); }
+
+@media (max-width: 820px) {
+  .slide { grid-template-columns: minmax(0,1fr); grid-template-rows: auto minmax(12rem, 1fr); gap: 1rem; padding-top: 1.5rem; }
+  .text { justify-content: start; gap: .7rem; }
+  ul.facts li:nth-child(n+4) { display: none; }
+  .bar .hide-sm { display: none; }
+}
+</style>
+
+<div class="deck" id="deck">
+
+  <section class="slide title" data-scene="title" id="s1">
+    <div class="viz"><canvas></canvas></div>
+    <div class="text">
+      <div class="eyebrow">Internal briefing · October 2026</div>
+      <h1>cc0-sampler</h1>
+      <p>A text-to-sample <strong>DiT</strong> (diffusion transformer), trained only on clean-licence audio.</p>
+      <div class="note">Mick Grierson · Creative Computing Institute, University of the Arts London</div>
+    </div>
+  </section>
+
+  <section class="slide" data-scene="chain" id="s2">
+    <div class="text">
+      <div class="eyebrow">Principle</div>
+      <h2>Every weight has a licence we can state</h2>
+      <p>Codec and text encoder: frozen. The DiT: trained here.</p>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+  <section class="slide" data-scene="data" id="s3">
+    <div class="text">
+      <div class="eyebrow">Data · Freesound</div>
+      <h2>279k CC0 clips, 589 hours</h2>
+      <p>CC0 (Creative Commons Zero) only. <span class="num">2,762</span> excluded on clear evidence.</p>
+      <div class="legend"><span><i></i>100 clips</span><span><i class="ring"></i>Modular Samples, 13.3%</span><span><i class="x"></i>excluded</span></div>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+  <section class="slide" data-scene="stems" id="s4">
+    <div class="text">
+      <div class="eyebrow">Data · synthetic</div>
+      <h2>Generated data is ground truth</h2>
+      <p>Aligned stems. Captions from the generator's own values.</p>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+  <section class="slide" data-scene="vae" id="s5">
+    <div class="text">
+      <div class="eyebrow">Latent space</div>
+      <h2>1920 times fewer frames</h2>
+      <p>48 kHz stereo to 64 channels at 25 Hz, through a frozen <strong>VAE</strong> (variational autoencoder).</p>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+  <section class="slide" data-scene="qual" id="s6">
+    <div class="text">
+      <div class="eyebrow">Codec quality</div>
+      <h2>Better than MP3 at 64 kbps</h2>
+      <p>It sets the ceiling: top octave, clicks, noise.</p>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+  <section class="slide" data-scene="dit" id="s7">
+    <div class="text">
+      <div class="eyebrow">Model</div>
+      <h2>One token per 40 ms frame</h2>
+      <p class="num">1024 wide · 16 layers · 16 heads · 326M</p>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+  <section class="slide" data-scene="flow" id="s8">
+    <div class="text">
+      <div class="eyebrow">Objective</div>
+      <h2>Rectified flow</h2>
+      <div class="eq">
+        <div>x<sub>t</sub> = (1 − t) · x<sub>0</sub> + t · ε</div>
+        <div>v = ε − x<sub>0</sub></div>
+      </div>
+      <p>Straight paths. 50 steps to sample.</p>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+  <section class="slide" data-scene="cfg" id="s9">
+    <div class="text">
+      <div class="eyebrow">Sampling</div>
+      <h2>Guidance limits variety</h2>
+      <p><strong>CFG</strong> (classifier-free guidance) 6 to 3: about 35% more diversity, same prompt match.</p>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+  <section class="slide" data-scene="train" id="s10">
+    <div class="text">
+      <div class="eyebrow">Training</div>
+      <h2>200k steps in about 30 hours</h2>
+      <p>Two 96 GB workstation cards. Batch 256.</p>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+  <section class="slide" data-scene="v12" id="s11">
+    <div class="text">
+      <div class="eyebrow">v1 to v2</div>
+      <h2>Longer, masked, a fifth synthetic</h2>
+      <p>Trained from scratch on reviewed data.</p>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+  <section class="slide" data-scene="res" id="s12">
+    <div class="text">
+      <div class="eyebrow">v2 at 200k</div>
+      <h2>Keeps time. Finds the note.</h2>
+      <p>30 prompts × 2 seeds.</p>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+  <section class="slide" data-scene="speed" id="s13">
+    <div class="text">
+      <div class="eyebrow">Speed</div>
+      <h2>Hours, not weeks</h2>
+      <p>v2 bar is an estimate.</p>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+  <section class="slide" data-scene="next" id="s14">
+    <div class="text">
+      <div class="eyebrow">Next</div>
+      <h2>v3 starts from v2</h2>
+      <p>New inputs start at zero. Adds accompaniment and continuation.</p>
+      <div class="note">github.com/micknoise/cc0-sampler</div>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+</div>
+
+<div class="progress" id="progress"></div>
+<div class="bar">
+  <span>cc0-sampler</span>
+  <span class="ctrl">
+    <span class="hide-sm">← → to move · I to invert</span>
+    <button type="button" id="prev" aria-label="Previous slide">←</button>
+    <span class="count" id="count">01 / 14</span>
+    <button type="button" id="next" aria-label="Next slide">→</button>
+    <button type="button" id="fs" class="hide-sm">Full screen</button>
+  </span>
+</div>
+
+<script>
+(() => {
+const slides = [...document.querySelectorAll('.slide')];
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const eo = x => { x = clamp(x); return 1 - Math.pow(1 - x, 3); };
+const eio = x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const ph = (t, a, b) => eo((t - a) / (b - a));
+const lerp = (a, b, u) => a + (b - a) * u;
+function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function gauss(r) { const u = Math.max(r(), 1e-9), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+let RGB = '11,11,11', BGC = '255,255,255';
+const C = (a = 1) => `rgba(${RGB},${clamp(a)})`;
+const B = (a = 1) => `rgba(${BGC},${clamp(a)})`;
+const SANS = 'Geist, system-ui, -apple-system, "Segoe UI", sans-serif';
+const MONO = '"Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
+const font = (ctx, px, wgt = 400, mono = false) => { ctx.font = `${wgt} ${px}px ${mono ? MONO : SANS}`; };
+const fs = (c, base) => Math.round(clamp(base * c.w / 760, base * .82, base * 1.3));
+const fmt = n => Math.round(n).toLocaleString('en-GB');
+const cache = {};
+
+function dot(ctx, x, y, r) { ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, Math.PI * 2); }
+function arrow(ctx, x1, y1, x2, y2, a, head = 6) {
+  ctx.strokeStyle = C(a); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  const an = Math.atan2(y2 - y1, x2 - x1);
+  ctx.fillStyle = C(a); ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - head * Math.cos(an - .45), y2 - head * Math.sin(an - .45));
+  ctx.lineTo(x2 - head * Math.cos(an + .45), y2 - head * Math.sin(an + .45));
+  ctx.closePath(); ctx.fill();
+}
+
+const scenes = {
+
+title(c) {
+  const { ctx, w, h, t } = c;
+  const x0 = w * .02, W = w * .96, y = h * .34, A = h * .2;
+  const grow = eo(t / 2.2);
+  const env = u => { let q = (u * 8 - t * .12) % 1; if (q < 0) q += 1; return Math.exp(-q * 4.2) * .85 + .07; };
+  const sig = u => Math.sin(u * 1900 + t * .9) * .55 + Math.sin(u * 717 - t * .7) * .3 + Math.sin(u * 4100) * .15;
+  ctx.lineWidth = 1.1; ctx.strokeStyle = C(.88); ctx.beginPath();
+  const n = Math.floor(W * grow / 1.5);
+  for (let i = 0; i <= n; i++) { const x = x0 + i * 1.5, u = (x - x0) / W, v = env(u) * sig(u) * A; i ? ctx.lineTo(x, y - v) : ctx.moveTo(x, y - v); }
+  ctx.stroke();
+  const N = 100, dy = y + A + h * .12;
+  ctx.fillStyle = C(1);
+  for (let k = 0; k < N; k++) {
+    const u = (k + .5) / N, a = ph(t, 1.4 + u * 1.4, 2.2 + u * 1.4);
+    if (a <= 0) continue;
+    ctx.fillStyle = C(a); ctx.beginPath(); dot(ctx, x0 + u * W, dy, 1 + env(u) * 4.2); ctx.fill();
+  }
+  font(ctx, fs(c, 11), 400, true); ctx.fillStyle = C(.5 * grow); ctx.textBaseline = 'alphabetic';
+  ctx.fillText('48,000 samples per second', x0, Math.max(14, y - A - 10));
+  ctx.fillStyle = C(.5 * ph(t, 1.4, 2.4)); ctx.fillText('25 latent frames per second', x0, dy - 14);
+},
+
+chain(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 15);
+  const N = [
+    ['Freesound CC0', 'about 276k clips', .15, .14],
+    ['Our generator', 'stems + captions', .15, .62],
+    ['VAE encoder', 'frozen · MIT', .42, .38],
+    ['Latents', '64 ch × 25 Hz', .64, .38],
+    ['T5-base', 'frozen · Apache 2.0', .86, .08],
+    ['DiT', 'trained here', .86, .38],
+    ['VAE decoder', 'frozen · MIT', .86, .70],
+    ['Audio', '48 kHz stereo', .58, .70],
+  ];
+  const E = [[0, 2], [1, 2], [2, 3], [3, 5], [4, 5], [5, 6], [6, 7]];
+  const bx = N.map(([l, s, fx, fy], i) => {
+    font(ctx, f, 500); const tw = ctx.measureText(l).width;
+    font(ctx, f * .8, 400, true); const sw = ctx.measureText(s).width;
+    const bw = Math.max(tw, sw) + f * 1.8, bh = f * 3.5;
+    const x = clamp(fx * w, bw / 2 + 2, w - bw / 2 - 2), y = clamp(fy * h + bh / 2, bh / 2 + 2, h - bh / 2 - 2);
+    return { l, s, x, y, w: bw, h: bh, a: ph(t, .15 + i * .16, .85 + i * .16) };
+  });
+  const port = (b, tx, ty, gap = 5) => {
+    const dx = tx - b.x, dy = ty - b.y;
+    const s = Math.min((b.w / 2 + gap) / Math.max(Math.abs(dx), 1e-6), (b.h / 2 + gap) / Math.max(Math.abs(dy), 1e-6));
+    return [b.x + dx * s, b.y + dy * s];
+  };
+  E.forEach(([i, j], k) => {
+    const A = bx[i], Bb = bx[j], a = Math.min(A.a, Bb.a);
+    if (a <= 0) return;
+    const [x1, y1] = port(A, Bb.x, Bb.y), [x2, y2] = port(Bb, A.x, A.y);
+    const xe = lerp(x1, x2, a), ye = lerp(y1, y2, a);
+    arrow(ctx, x1, y1, xe, ye, .45 * a);
+    if (a > .98) {
+      ctx.fillStyle = C(.9);
+      for (let q = 0; q < 2; q++) {
+        const u = (t * .32 + q * .5 + k * .137) % 1, al = Math.sin(Math.PI * u);
+        ctx.fillStyle = C(al); ctx.beginPath(); dot(ctx, lerp(x1, x2, u), lerp(y1, y2, u), 2.6); ctx.fill();
+      }
+    }
+  });
+  bx.forEach((b, i) => {
+    if (b.a <= 0) return;
+    ctx.save(); ctx.globalAlpha = b.a;
+    const hl = i === 5;
+    ctx.fillStyle = hl ? C(1) : B(1); ctx.strokeStyle = C(.9); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.rect(b.x - b.w / 2, b.y - b.h / 2, b.w, b.h); ctx.fill(); ctx.stroke();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    font(ctx, f, 500); ctx.fillStyle = hl ? B(1) : C(1); ctx.fillText(b.l, b.x, b.y - f * .55);
+    font(ctx, f * .8, 400, true); ctx.fillStyle = hl ? B(.75) : C(.55); ctx.fillText(b.s, b.x, b.y + f * .75);
+    ctx.restore();
+  });
+},
+
+data(c) {
+  const { ctx, w, h, t } = c;
+  const N = 2794;
+  if (!cache.data) {
+    const r = rng(42), cat = new Uint8Array(N), idx = [...Array(N).keys()];
+    for (let i = N - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+    for (let k = 0; k < 371; k++) cat[idx[k]] = 1;
+    for (let k = 371; k < 371 + 28; k++) cat[idx[k]] = 2;
+    cache.data = cat;
+  }
+  const cat = cache.data, H = h * .98;
+  let cell = Math.sqrt(w * H / N); const cols = Math.max(1, Math.floor(w / cell)), rows = Math.ceil(N / cols);
+  cell = Math.min(w / cols, H / rows); const r0 = cell * .3, offx = (w - cols * cell) / 2, offy = (h - rows * cell) / 2;
+  const plain = [];
+  for (let i = 0; i < N; i++) {
+    const col = i % cols, row = Math.floor(i / cols);
+    let x = offx + (col + .5) * cell, y = offy + (row + .5) * cell;
+    const a = ph(t, .1 + col / cols * 1.2, .7 + col / cols * 1.2);
+    if (a <= 0) continue;
+    if (cat[i] === 0) { plain.push(x, y, a); continue; }
+    if (cat[i] === 1) {
+      const m = ph(t, 2.4 + row / rows * .9, 3.2 + row / rows * .9);
+      if (m < 1) { ctx.fillStyle = C(a * (1 - m)); ctx.beginPath(); dot(ctx, x, y, r0); ctx.fill(); }
+      if (m > 0) { ctx.strokeStyle = C(a * m * .9); ctx.lineWidth = 1; ctx.beginPath(); dot(ctx, x, y, r0 * .92); ctx.stroke(); }
+    } else {
+      const e = ph(t, 4.2 + col / cols * .7, 5.6 + col / cols * .7);
+      if (e > 0) {
+        const s = r0 * .8; ctx.strokeStyle = C(.45 * e); ctx.lineWidth = 1; ctx.beginPath();
+        ctx.moveTo(x - s, y - s); ctx.lineTo(x + s, y + s); ctx.moveTo(x + s, y - s); ctx.lineTo(x - s, y + s); ctx.stroke();
+      }
+      ctx.fillStyle = C(a * (1 - e)); ctx.beginPath(); dot(ctx, x, y + e * cell * 2.4, r0); ctx.fill();
+    }
+  }
+  ctx.fillStyle = C(1); ctx.beginPath();
+  for (let k = 0; k < plain.length; k += 3) if (plain[k + 2] >= .999) dot(ctx, plain[k], plain[k + 1], r0);
+  ctx.fill();
+  for (let k = 0; k < plain.length; k += 3) if (plain[k + 2] < .999) { ctx.fillStyle = C(plain[k + 2]); ctx.beginPath(); dot(ctx, plain[k], plain[k + 1], r0); ctx.fill(); }
+},
+
+stems(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 12);
+  if (!cache.stems) {
+    const r = rng(7), ev = {};
+    ev.kick = []; ev.snare = []; ev.perc = []; ev.bass = []; ev.pad = [];
+    for (let i = 0; i < 16; i++) { ev.kick.push([i, 0, 1]); if (i % 2 === 1) ev.snare.push([i, 0, .8]); }
+    for (let i = 0; i < 64; i++) { const b = i * .25; const off = (i % 4 === 2); if (off || r() < .3) ev.perc.push([b, 0, off ? .55 : .22 + r() * .15]); }
+    const riff = [[.5, .4, .25], [1.5, .2, .25], [1.75, .2, .55], [2.5, .4, .25], [3.5, .35, .42]];
+    const roots = [0, 0, .1, -.04];
+    for (let bar = 0; bar < 4; bar++) for (const [b, d, v] of riff) ev.bass.push([bar * 4 + b, d, v + roots[bar]]);
+    const chords = [[.3, .5, .72], [.24, .46, .66], [.36, .56, .78], [.3, .5, .7]];
+    chords.forEach((vs, bar) => vs.forEach(v => ev.pad.push([bar * 4, 3.9, v])));
+    ev.drums = [...ev.kick.map(e => [e[0], 0, .95]), ...ev.snare.map(e => [e[0], 0, .7]), ...ev.perc.map(e => [e[0], 0, e[2] * .7])];
+    cache.stems = ev;
+  }
+  const ev = cache.stems;
+  const lanes = ['drums', 'kick', 'snare', 'perc', 'bass', 'pad', 'mix'];
+  const lw = f * 4.4, x0 = lw, X1 = w - 2, W = X1 - x0, LH = h * .6 / 7;
+  const beat = t * 124 / 60, ppb = W / 16, play = x0 + W * .25, base = Math.floor(beat / 16) * 16;
+  const mixEnv = b => { b = ((b % 16) + 16) % 16; const fb = b % 1, f2 = b % 2;
+    return clamp(.7 * Math.exp(-fb * 6) + (f2 >= 1 ? .45 * Math.exp(-(f2 - 1) * 5) : 0) + .16 + .06 * Math.sin(b * 31)); };
+  lanes.forEach((name, i) => {
+    const y = i * LH, a = ph(t, .1 + i * .12, .7 + i * .12); if (a <= 0) return;
+    font(ctx, f, 400, true); ctx.fillStyle = C((name === 'mix' ? .95 : .55) * a); ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+    ctx.fillText(name, 0, y + LH / 2);
+    ctx.strokeStyle = C(.08 * a); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x0, y + LH / 2); ctx.lineTo(X1, y + LH / 2); ctx.stroke();
+    ctx.save(); ctx.beginPath(); ctx.rect(x0, y, W, LH); ctx.clip();
+    if (name === 'mix') {
+      ctx.fillStyle = C(.6 * a); ctx.beginPath();
+      for (let x = x0; x <= X1; x += 2) { const e = mixEnv(beat + (x - play) / ppb); ctx.lineTo(x, y + LH / 2 - e * LH * .44); }
+      for (let x = X1; x >= x0; x -= 2) { const e = mixEnv(beat + (x - play) / ppb); ctx.lineTo(x, y + LH / 2 + e * LH * .44); }
+      ctx.closePath(); ctx.fill();
+    } else {
+      for (let rep = -1; rep <= 1; rep++) for (const [b, d, v] of ev[name]) {
+        const xb = base + rep * 16 + b, x = play + (xb - beat) * ppb, len = Math.max(d * ppb - 2, 2);
+        if (x + len < x0 || x > X1) continue;
+        const on = x <= play && x + Math.max(len, 4) >= play - 1;
+        const al = a * (on ? 1 : x < play ? .28 : .8);
+        ctx.fillStyle = C(al);
+        if (name === 'bass') ctx.fillRect(x, y + LH * (.88 - v * .76), len, Math.max(LH * .12, 2));
+        else if (name === 'pad') ctx.fillRect(x, y + LH * (.92 - v * .84), len, 2);
+        else { const hh = LH * .74 * v * (on ? 1.08 : 1), bw = name === 'kick' ? 3 : 2; ctx.fillRect(x - bw / 2, y + LH / 2 - hh / 2, bw, hh); }
+      }
+    }
+    ctx.restore();
+  });
+  ctx.strokeStyle = C(.75); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(play, 0); ctx.lineTo(play, LH * 7); ctx.stroke();
+
+  const clauses = ['house bassline', '124 BPM', 'root F', 'syncopated root-heavy riff', 'minor mode', 'medium intensity'];
+  const period = 3.4, cyc = Math.floor(t / period);
+  const fz = Math.round(f * 1.3);
+  const layout = cy => {
+    const r = rng(cy * 7919 + 13), order = [1, 2, 3, 4, 5];
+    for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    const drop = {}; order.forEach(k => { drop[k] = cy > 0 && r() < .2; });
+    font(ctx, fz, 400); const pos = {}; let x = 0, line = 0; const lh = fz * 1.7;
+    [0, ...order].forEach((k, n) => {
+      const s = clauses[k] + (n < 5 ? ',' : ''), tw = ctx.measureText(s + ' ').width;
+      if (x + tw > w && x > 0) { x = 0; line++; }
+      pos[k] = { x, y: line * lh, d: drop[k] || false, s }; x += tw;
+    });
+    return pos;
+  };
+  const P0 = layout(Math.max(cyc - 1, 0)), P1 = layout(cyc), u = eio(((t % period) - .1) / 1.1);
+  const y0 = h * .7, ca = ph(t, 1, 1.8);
+  font(ctx, f, 400, true); ctx.fillStyle = C(.5 * ca); ctx.textBaseline = 'alphabetic';
+  ctx.fillText(`prompt, draw ${cyc + 1}`, 0, y0 - fz * .9);
+  font(ctx, fz, 400);
+  clauses.forEach((_, k) => {
+    const a = P0[k], b = P1[k]; const x = lerp(a.x, b.x, u), y = y0 + fz + lerp(a.y, b.y, u);
+    const da = lerp(a.d ? 1 : 0, b.d ? 1 : 0, u);
+    const s = b.s, tw = ctx.measureText(s).width;
+    ctx.fillStyle = C(ca * (k === 0 ? 1 : 1 - da * .75)); ctx.fillText(s, x, y);
+    if (da > .01) { ctx.strokeStyle = C(ca * da * .6); ctx.beginPath(); ctx.moveTo(x, y - fz * .32); ctx.lineTo(x + tw * da, y - fz * .32); ctx.stroke(); }
+  });
+},
+
+vae(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 11);
+  const env = u => { let q = (u * 8) % 1; return Math.exp(-q * 5) * .8 + .12 + .05 * Math.sin(u * 40); };
+  const yc = h * .16, A = h * .09, gy = h * .42, gh = h * .5;
+  const scan = eio((t - .5) / 4.2);
+  ctx.lineWidth = 1;
+  for (const pass of [0, 1]) {
+    ctx.strokeStyle = pass ? C(.9) : C(.18); ctx.beginPath();
+    const xe = pass ? w * scan : w;
+    for (let x = 0; x <= xe; x += 1.2) { const u = x / w; const v = env(u) * (Math.sin(u * 2600) * .6 + Math.sin(u * 990) * .4) * A; x ? ctx.lineTo(x, yc - v) : ctx.moveTo(x, yc - v); }
+    ctx.stroke();
+  }
+  const key = RGB;
+  if (!cache.vae || cache.vae.key !== key) {
+    const cv = document.createElement('canvas'); cv.width = 250; cv.height = 64;
+    const g = cv.getContext('2d'), im = g.createImageData(250, 64), rgb = RGB.split(',').map(Number);
+    for (let col = 0; col < 250; col++) for (let row = 0; row < 64; row++) {
+      const u = col / 250, e = env(u);
+      const v = .5 + .5 * Math.sin(row * 1.7 + col * .11 + Math.sin(col * .05 + row * .6) * 2.2) * (e * .9 + .1) * (.6 + .4 * Math.sin(row * .37));
+      const p = (row * 250 + col) * 4; im.data[p] = rgb[0]; im.data[p + 1] = rgb[1]; im.data[p + 2] = rgb[2]; im.data[p + 3] = Math.round(255 * (.05 + .85 * clamp(v)));
+    }
+    g.putImageData(im, 0, 0); cache.vae = { key, cv };
+  }
+  const cols = Math.floor(scan * 250);
+  if (cols > 0) { ctx.imageSmoothingEnabled = false; ctx.drawImage(cache.vae.cv, 0, 0, cols, 64, 0, gy, w * cols / 250, gh); }
+  ctx.strokeStyle = C(.12); ctx.strokeRect(.5, gy + .5, w - 1, gh - 1);
+  if (scan > 0 && scan < 1) {
+    const xs = w * scan; ctx.strokeStyle = C(.7); ctx.beginPath(); ctx.moveTo(xs, yc - A * 1.2); ctx.lineTo(xs, gy + gh); ctx.stroke();
+    ctx.fillStyle = C(.06); ctx.beginPath(); ctx.moveTo(xs - 14, yc + A); ctx.lineTo(xs + 14, yc + A); ctx.lineTo(xs + 2, gy); ctx.lineTo(xs - 2, gy); ctx.closePath(); ctx.fill();
+  }
+  font(ctx, f, 400, true); ctx.fillStyle = C(.55); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+  ctx.fillText('10 s · 48 kHz stereo · 480,000 samples × 2', 0, yc - A - 12 > 10 ? yc - A - 12 : 11);
+  ctx.fillText(`latents · ${cols} / 250 frames × 64 channels`, 0, gy - 10);
+  const stages = [2, 4, 4, 6, 10]; let x = 0; const sy = gy + gh + f * 2.2; const lit = Math.floor(scan * 5.999);
+  font(ctx, f * 1.15, 500, true);
+  stages.forEach((s, i) => { ctx.fillStyle = C(i <= lit ? .9 : .25); const str = (i ? '× ' : '') + s + ' '; ctx.fillText(str, x, sy); x += ctx.measureText(str).width; });
+  ctx.fillStyle = C(scan > .99 ? .95 : .25); ctx.fillText('= 1920', x, sy);
+},
+
+qual(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 12);
+  const L = f * 3.6, R = w - 4, T = h * .14, Bt = h * .82, H = Bt - T;
+  const Y = v => Bt - v / 10 * H;
+  font(ctx, f * .9, 400, true); ctx.textBaseline = 'middle'; ctx.textAlign = 'right';
+  for (let v = 0; v <= 10; v += 2) { ctx.strokeStyle = C(v ? .08 : .4); ctx.beginPath(); ctx.moveTo(L, Y(v)); ctx.lineTo(R, Y(v)); ctx.stroke(); ctx.fillStyle = C(.45); ctx.fillText(v + ' dB', L - 8, Y(v)); }
+  const groups = [['Median error per frame', 3.20, 3.32], ['Worst 5% of frames', 7.66, 9.67]];
+  const gw = (R - L) / 2, bw = Math.min(gw * .26, 90);
+  groups.forEach(([lab, a, b], g) => {
+    const cx = L + gw * (g + .5);
+    [[a, true], [b, false]].forEach(([v, solid], k) => {
+      const gr = ph(t, .3 + g * .5 + k * .2, 1.6 + g * .5 + k * .2), x = cx + (k ? 6 : -bw - 6), y = Y(v * gr);
+      if (solid) { ctx.fillStyle = C(.92); ctx.fillRect(x, y, bw, Bt - y); }
+      else { ctx.strokeStyle = C(.92); ctx.lineWidth = 1.2; ctx.strokeRect(x + .6, y + .6, bw - 1.2, Bt - y - .6); }
+      font(ctx, f * 1.1, 500, true); ctx.fillStyle = C(gr); ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      ctx.fillText((v * gr).toFixed(2), x + bw / 2, y - 8);
+    });
+    font(ctx, f, 400); ctx.fillStyle = C(.6); ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(lab, cx, Bt + 10);
+  });
+  font(ctx, f, 400); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = C(.92); ctx.fillRect(L, f * .4, f * .8, f * .8); ctx.fillStyle = C(.7); ctx.fillText('ACE-Step 1.5 VAE', L + f * 1.3, f * .8);
+  const lx = L + f * 1.3 + ctx.measureText('ACE-Step 1.5 VAE').width + f * 1.6;
+  ctx.strokeStyle = C(.92); ctx.strokeRect(lx + .5, f * .4 + .5, f * .8 - 1, f * .8 - 1); ctx.fillStyle = C(.7); ctx.fillText('MP3 64 kbps', lx + f * 1.3, f * .8);
+},
+
+dit(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 11);
+  const L = 16, nt = 26, left = w * .2, right = w * .76, rowW = right - left, step = rowW / nt, s = Math.min(step * .7, 15);
+  const yIn = h * .9, yOut = h * .06, yBot = h * .76, yTop = h * .2;
+  const yl = l => yBot - l * (yBot - yTop) / (L - 1);
+  const period = 5.5, p = (t % period) / period * (L + 4), act = Math.floor(p) - 1;
+  const ap = ph(t, 0, .8);
+  for (let j = 0; j < nt; j++) {
+    const x = left + step * (j + .5);
+    if (j === 0) { ctx.fillStyle = C(ap); ctx.fillRect(x - s / 2, yIn - s / 2, s, s); }
+    else { ctx.fillStyle = C(.12 * ap); ctx.fillRect(x - s / 2, yIn - s / 2, s, s); ctx.strokeStyle = C(.8 * ap); ctx.strokeRect(x - s / 2 + .5, yIn - s / 2 + .5, s - 1, s - 1); }
+    ctx.strokeStyle = C(.08 * ap); ctx.beginPath(); ctx.moveTo(x, yIn - s / 2); ctx.lineTo(x, yBot); ctx.stroke();
+  }
+  for (let l = 0; l < L; l++) {
+    const y = yl(l), on = l === act, done = l < act;
+    ctx.strokeStyle = C(on ? 1 : done ? .5 : .18); ctx.lineWidth = on ? 2.5 : 1;
+    ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(right, y); ctx.stroke();
+  }
+  ctx.lineWidth = 1;
+  if (act >= 0 && act < L) {
+    const y = yl(act), r = rng(act * 31 + 5), lp = (p % 1);
+    for (let k = 0; k < 8; k++) {
+      const j1 = 1 + Math.floor(r() * (nt - 1)), j2 = Math.floor(r() * nt); if (j1 === j2) continue;
+      const x1 = left + step * (j1 + .5), x2 = left + step * (j2 + .5), hh = Math.min(Math.abs(x2 - x1) * .35, (yBot - yTop) / L * 3.5);
+      ctx.strokeStyle = C(.55 * Math.sin(Math.PI * lp)); ctx.beginPath(); ctx.moveTo(x1, y); ctx.quadraticCurveTo((x1 + x2) / 2, y - hh, x2, y); ctx.stroke();
+    }
+  }
+  const xT = Math.min(w * .9, w - 14), nT = 10;
+  for (let i = 0; i < nT; i++) {
+    const y = lerp(yTop, yBot, i / (nT - 1));
+    ctx.fillStyle = C(.15 * ap); ctx.fillRect(xT - 5, y - 5, 10, 10); ctx.strokeStyle = C(.7 * ap); ctx.strokeRect(xT - 4.5, y - 4.5, 9, 9);
+    if (act >= 0 && act < L && i % 3 === 0) { ctx.strokeStyle = C(.4 * Math.sin(Math.PI * (p % 1))); ctx.beginPath(); ctx.moveTo(xT - 6, y); ctx.lineTo(right + 4, yl(act)); ctx.stroke(); }
+  }
+  const outA = p > L + 1 ? ph(p, L + 1, L + 2) : 0;
+  for (let j = 1; j < nt; j++) { const x = left + step * (j + .5); ctx.fillStyle = C(.85 * outA); ctx.fillRect(x - s / 2, yOut, s, s); }
+  if (outA > 0) { ctx.strokeStyle = C(.2 * outA); ctx.beginPath(); ctx.moveTo(left + step * 1.5, yTop - 4); ctx.lineTo(left + step * 1.5, yOut + s + 4); ctx.stroke(); }
+  font(ctx, f, 400, true); ctx.fillStyle = C(.55); ctx.textBaseline = 'middle';
+  ctx.textAlign = 'right'; ctx.fillText('16 blocks', left - 10, (yTop + yBot) / 2);
+  ctx.fillText('global', left - 10, yIn - f * .6); ctx.fillText('token', left - 10, yIn + f * .6);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('250 latent frames × 64 → 1024 (25 shown)', left + step, yIn + s / 2 + 6);
+  ctx.textBaseline = 'bottom'; ctx.fillText('velocity · 250 × 64', left + step, yOut - 4 > 10 ? yOut - 4 : yOut + s + 16);
+  ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillText('T5 prompt', xT + 6, yTop - 12);
+  ctx.textBaseline = 'top'; ctx.fillText('≤ 64 × 768', xT + 6, yBot + 12);
+},
+
+flow(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 11);
+  const P = 240;
+  if (!cache.flow) {
+    const r = rng(3); const pts = [];
+    for (let i = 0; i < P; i++) {
+      const k = i % 3, nx = gauss(r), ny = gauss(r); let dx, dy;
+      if (k === 0) { const a = r() * 6.283; dx = Math.cos(a); dy = Math.sin(a); }
+      else if (k === 1) { dx = (r() - .5) * 2; dy = gauss(r) * .08; }
+      else { dx = gauss(r) * .45; dy = gauss(r) * .45; }
+      pts.push({ k, nx, ny, dx, dy });
+    }
+    cache.flow = pts;
+  }
+  const cxn = w * .22, cyn = h * .38, sg = h * .1;
+  const cl = [[w * .8, h * .12], [w * .8, h * .38], [w * .8, h * .64]];
+  const shp = [h * .05, w * .09, h * .045];
+  const tc = t % 8, s = eio((tc - 1.2) / 4.4), tv = 1 - s;
+  const pos = (q, u) => { const [cx, cy] = cl[q.k]; const dx = q.k === 1 ? q.dx * shp[1] : q.dx * shp[q.k], dy = q.k === 1 ? q.dy * h * .2 : q.dy * shp[q.k];
+    return [lerp(cxn + q.nx * sg, cx + dx, u), lerp(cyn + q.ny * sg, cy + dy, u)]; };
+  const ap = ph(t, 0, 1);
+  ctx.strokeStyle = C(.055 * ap); ctx.lineWidth = 1; ctx.beginPath();
+  cache.flow.forEach(q => { const [x1, y1] = pos(q, 0), [x2, y2] = pos(q, 1); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); }); ctx.stroke();
+  ctx.fillStyle = C(.9 * ap); ctx.beginPath(); cache.flow.forEach(q => { const [x, y] = pos(q, s); dot(ctx, x, y, 2); }); ctx.fill();
+  font(ctx, f, 400, true); ctx.fillStyle = C(.55); ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText('noise, t = 1', cxn, cyn + sg * 3 + 6);
+  ['808 kick', 'house bassline', 'warm pad'].forEach((l, i) => ctx.fillText(l, cl[i][0], cl[i][1] + shp[0] * 1.25 + 4));
+  font(ctx, fs(c, 22), 500, true); ctx.fillStyle = C(.95); ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('t = ' + tv.toFixed(2), 0, 0);
+  const ix0 = 0, ix1 = Math.min(w * .42, 300), iy0 = h * .8, iy1 = h * .97;
+  const lg = x => Math.log(x / (1 - x)), pdf = x => Math.exp(-lg(x) * lg(x) / 2) / (x * (1 - x));
+  let mx = 0; for (let i = 1; i < 100; i++) mx = Math.max(mx, pdf(i / 100));
+  ctx.beginPath(); ctx.moveTo(ix0, iy1);
+  for (let i = 1; i < 100; i++) { const x = i / 100; ctx.lineTo(lerp(ix0, ix1, x), iy1 - pdf(x) / mx * (iy1 - iy0)); }
+  ctx.lineTo(ix1, iy1); ctx.closePath(); ctx.fillStyle = C(.1); ctx.fill(); ctx.strokeStyle = C(.6); ctx.stroke();
+  const mxp = lerp(ix0, ix1, tv); ctx.strokeStyle = C(.95); ctx.beginPath(); ctx.moveTo(mxp, iy0 - 4); ctx.lineTo(mxp, iy1); ctx.stroke();
+  font(ctx, f * .95, 400, true); ctx.fillStyle = C(.5); ctx.textBaseline = 'bottom'; ctx.fillText('training timestep density (logit-normal)', ix0, iy0 - 8);
+},
+
+cfg(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 11);
+  const wg = 4.5 - 1.5 * Math.cos(t * 2 * Math.PI / 9);
+  const tbl = [[3, .253, .374], [4.5, .218, .381], [6, .188, .377]];
+  const div = wg <= 4.5 ? lerp(.253, .218, (wg - 3) / 1.5) : lerp(.218, .188, (wg - 4.5) / 1.5);
+  if (!cache.cfg) { const r = rng(9); cache.cfg = { u: Array.from({ length: 260 }, () => [gauss(r), gauss(r)]), c: Array.from({ length: 28 }, () => [gauss(r), gauss(r)]) }; }
+  const narrow = w < 520, cx = narrow ? w * .5 : w * .26, cy = narrow ? h * .26 : h * .5, S = Math.min(narrow ? h * .1 : h * .17, w * .14);
+  const ap = ph(t, 0, 1);
+  ctx.fillStyle = C(.13 * ap); ctx.beginPath(); cache.cfg.u.forEach(([a, b]) => dot(ctx, cx + a * S * 1.3, cy + b * S * 1.3, 1.5)); ctx.fill();
+  const sp = S * .62 * div / .253;
+  ctx.fillStyle = C(.92 * ap); ctx.beginPath(); cache.cfg.c.forEach(([a, b]) => dot(ctx, cx + S * .35 + a * sp, cy - S * .2 + b * sp, 2.8)); ctx.fill();
+  font(ctx, fs(c, 22), 500, true); ctx.fillStyle = C(.95); ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('w = ' + wg.toFixed(1), narrow ? 0 : cx - S * 1.6, 0);
+  font(ctx, f, 400, true); ctx.fillStyle = C(.5);
+  ctx.fillText('grey: unconditional · black: prompt "breakbeat"', narrow ? 0 : cx - S * 1.6, fs(c, 22) * 1.5);
+  const X0 = narrow ? 0 : w * .56, X1 = w - 2, charts = [['seed-to-seed diversity', 1, .3], ['prompt match', 2, .4]];
+  const top0 = narrow ? h * .52 : h * .12, ch = narrow ? h * .2 : h * .32, gap = narrow ? h * .06 : h * .12;
+  const near = tbl.reduce((b, r) => Math.abs(r[0] - wg) < Math.abs(b[0] - wg) ? r : b);
+  charts.forEach(([lab, col, max], g) => {
+    const T = top0 + g * (ch + gap), Bt = T + ch, bw = (X1 - X0) / 3 * .5;
+    font(ctx, f, 400, true); ctx.fillStyle = C(.6); ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.fillText(lab + ' (CLAP, v1 at 200k)', X0, T - 6);
+    ctx.strokeStyle = C(.35); ctx.beginPath(); ctx.moveTo(X0, Bt); ctx.lineTo(X1, Bt); ctx.stroke();
+    tbl.forEach((r, i) => {
+      const gr = ph(t, .3 + i * .15 + g * .3, 1.4 + i * .15 + g * .3), v = r[col] * gr, x = X0 + (X1 - X0) / 3 * (i + .25), y = Bt - v / max * ch;
+      if (r === near) { ctx.fillStyle = C(.92); ctx.fillRect(x, y, bw, Bt - y); } else { ctx.strokeStyle = C(.6); ctx.strokeRect(x + .5, y + .5, bw - 1, Bt - y - .5); }
+      ctx.fillStyle = C(.85 * gr); ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; font(ctx, f, 500, true); ctx.fillText(v.toFixed(3), x + bw / 2, y - 4);
+      ctx.fillStyle = C(.55); ctx.textBaseline = 'top'; font(ctx, f, 400, true); ctx.fillText('CFG ' + r[0], x + bw / 2, Bt + 6);
+    });
+  });
+},
+
+train(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 11);
+  const st = 200000 * eio((t - .6) / 9);
+  const sx0 = 0, sx1 = w * .26, sy0 = h * .1, sy1 = h * .44;
+  const gx0 = w * .46, gx1 = w * .82, g = [[h * .02, h * .22], [h * .32, h * .52]];
+  const ap = ph(t, 0, .8);
+  ctx.strokeStyle = C(.85 * ap); ctx.lineWidth = 1; ctx.strokeRect(sx0 + .5, sy0 + .5, sx1 - sx0 - 1, sy1 - sy0 - 1);
+  const r = rng(11); ctx.fillStyle = C(.25 * ap);
+  for (let i = 0; i < 70; i++) { const x = sx0 + 10 + r() * (sx1 - sx0 - 26), y = sy0 + 10 + r() * (sy1 - sy0 - 50); ctx.fillRect(x, y, 6, 6); }
+  font(ctx, f, 500); ctx.fillStyle = C(ap); ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+  ctx.fillText('pre-encoded latents', sx0 + 10, sy1 - 10);
+  g.forEach(([y0, y1], i) => {
+    ctx.strokeStyle = C(.85 * ap); ctx.strokeRect(gx0 + .5, y0 + .5, gx1 - gx0 - 1, y1 - y0 - 1);
+    font(ctx, f, 500); ctx.fillStyle = C(ap); ctx.textBaseline = 'top'; ctx.fillText(`GPU ${i} · 96 GB`, gx0 + 10, y0 + 9);
+    const by = y1 - 22, bw = gx1 - gx0 - 20, mem = ph(t, 1, 2.4) * 14.5 / 96;
+    ctx.strokeStyle = C(.35); ctx.strokeRect(gx0 + 10.5, by + .5, bw - 1, 9); ctx.fillStyle = C(.9); ctx.fillRect(gx0 + 10, by, bw * mem, 10);
+    font(ctx, f * .9, 400, true); ctx.fillStyle = C(.55); ctx.textBaseline = 'bottom'; ctx.fillText('14.5 GB in use (v2)', gx0 + 10, by - 4);
+    const my = (y0 + y1) / 2, sy = (sy0 + sy1) / 2;
+    for (let q = 0; q < 6; q++) {
+      const u = (t * .5 + q / 6 + i * .08) % 1, a = Math.sin(Math.PI * u) * ap;
+      ctx.fillStyle = C(.85 * a); ctx.fillRect(lerp(sx1 + 6, gx0 - 14, u), lerp(sy, my, u) - 4, 8, 8);
+    }
+  });
+  const ax = Math.min(gx1 + w * .07, w - 30), pulse = Math.pow(Math.sin(Math.PI * ((t * 1.3) % 1)), 2) * ap;
+  ctx.strokeStyle = C(.25 + .6 * pulse); ctx.lineWidth = 1 + pulse; ctx.beginPath();
+  ctx.moveTo(gx1, (g[0][0] + g[0][1]) / 2); ctx.lineTo(ax, (g[0][0] + g[0][1]) / 2); ctx.lineTo(ax, (g[1][0] + g[1][1]) / 2); ctx.lineTo(gx1, (g[1][0] + g[1][1]) / 2); ctx.stroke(); ctx.lineWidth = 1;
+  font(ctx, f * .9, 400, true); ctx.fillStyle = C(.55); ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  ctx.save(); ctx.translate(ax + 14, (g[0][1] + g[1][0]) / 2); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'center'; ctx.fillText('all-reduce', 0, 0); ctx.restore();
+  const tx0 = 0, tx1 = w - 2, ty = h * .86, X = s => lerp(tx0, tx1, s / 200000);
+  ctx.strokeStyle = C(.2); ctx.beginPath(); ctx.moveTo(tx0, ty); ctx.lineTo(tx1, ty); ctx.stroke();
+  ctx.strokeStyle = C(1); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(tx0, ty); ctx.lineTo(X(st), ty); ctx.stroke(); ctx.lineWidth = 1;
+  for (let k = 0; k <= 40; k++) { const s = k * 5000, big = k % 2 === 0, x = X(s); ctx.strokeStyle = C(s <= st ? .85 : .2); ctx.beginPath(); ctx.moveTo(x, ty - (big ? 10 : 5)); ctx.lineTo(x, ty); ctx.stroke(); }
+  font(ctx, f, 400, true); ctx.fillStyle = C(.5); ctx.textBaseline = 'top';
+  [0, 50000, 100000, 150000, 200000].forEach((s, i) => { ctx.textAlign = i === 0 ? 'left' : i === 4 ? 'right' : 'center'; ctx.fillText(s ? s / 1000 + 'k' : '0', X(s), ty + 8); });
+  ctx.textAlign = 'left'; ctx.fillText('ticks: checkpoint every 10k · demo every 5k', 0, ty + 8 + f * 1.7);
+  const ry = h * .62, big = fs(c, 26);
+  const vals = [['step', fmt(st)], ['crops seen', (st * 256 / 1e6).toFixed(1) + 'M'], ['v1 wall clock', (st / 10000 * 1.5).toFixed(1) + ' h']];
+  const cw = w / 3;
+  vals.forEach(([k, v], i) => {
+    font(ctx, f, 400, true); ctx.fillStyle = C(.5); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.fillText(k, i * cw, ry);
+    font(ctx, big, 500, true); ctx.fillStyle = C(.95); ctx.fillText(v, i * cw, ry + big * 1.25);
+  });
+},
+
+v12(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 11);
+  const cw = w / 250, hh = Math.min(h * .07, 34);
+  const row = (y, n, a, fill = i => true) => {
+    for (let i = 0; i < n; i++) { const on = fill(i); ctx.fillStyle = C((on ? .85 : .1) * a); ctx.fillRect(i * cw, y, Math.max(cw - (cw > 3 ? 1 : 0), .8), hh); }
+  };
+  const lab = (s, y, a) => { font(ctx, f, 400, true); ctx.fillStyle = C(.6 * a); ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.fillText(s, 0, y - 8); };
+  const a1 = ph(t, 0, .7), y1 = h * .1; lab('v1 · 160 tokens · 6.4 s', y1, a1); row(y1, Math.round(160 * a1), a1);
+  const a2 = ph(t, .5, 1), n2 = Math.round(160 + 90 * ph(t, 1, 2.6)), y2 = h * .3;
+  lab(`v2 · ${n2} tokens · ${(n2 / 25).toFixed(1)} s`, y2, a2); row(y2, n2, a2);
+  const a3 = ph(t, 3, 3.8), y3 = h * .56;
+  lab('a 3.2 s clip in the 10 s window: padding masked', y3, a3); row(y3, 250, a3, i => i < 80);
+  if (a3 > 0) {
+    const r = rng(5); ctx.strokeStyle = C(.4 * a3); ctx.lineWidth = 1;
+    for (let k = 0; k < 14; k++) { const i = Math.floor(r() * 80), j = Math.floor(r() * 80); const x1 = (i + .5) * cw, x2 = (j + .5) * cw;
+      ctx.beginPath(); ctx.moveTo(x1, y3 + hh); ctx.quadraticCurveTo((x1 + x2) / 2, y3 + hh + Math.abs(x2 - x1) * .35 + 6, x2, y3 + hh); ctx.stroke(); }
+    font(ctx, f, 400, true); ctx.fillStyle = C(.45 * a3); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('padding: no attention', 80 * cw + (170 * cw) / 2, y3 + hh / 2);
+  }
+  const a4 = ph(t, 4.6, 5.4), y4 = h * .84, W = w * a4;
+  lab('training draws', y4, a4);
+  ctx.fillStyle = C(.9 * a4); ctx.fillRect(0, y4, W * .8, hh); ctx.strokeStyle = C(.9 * a4); ctx.strokeRect(W * .8 + .5, y4 + .5, W * .2 - 1, hh - 1);
+  if (a4 > .6) { font(ctx, f, 500, true); ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.fillStyle = B(a4); ctx.fillText('Freesound CC0, reviewed · ~80%', 10, y4 + hh / 2);
+    ctx.fillStyle = C(a4); ctx.textAlign = 'center'; ctx.fillText(w > 600 ? 'synthetic · ~20%' : '~20%', W * .9, y4 + hh / 2); }
+},
+
+res(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 13);
+  const rows = [['Tempo right', 11, 14], ['Pitch exact', 4, 8], ['Pitch class right, ignoring octave', 8, 8]];
+  const R = Math.min(w / (14 * 2.7) , h * .045), sp = R * 2.7;
+  rows.forEach(([lab, hit, n], i) => {
+    const y = h * (.16 + i * .3), a = ph(t, i * .5, .6 + i * .5);
+    font(ctx, f, 500); ctx.fillStyle = C(a); ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.fillText(lab, 0, y - R - 10);
+    let shown = 0;
+    for (let k = 0; k < n; k++) {
+      const x = R + k * sp, fl = k < hit ? ph(t, .8 + i * .9 + k * .09, 1.2 + i * .9 + k * .09) : 0;
+      if (fl > .5) shown++;
+      ctx.strokeStyle = C(.7 * a); ctx.lineWidth = 1; ctx.beginPath(); dot(ctx, x, y, R - .5); ctx.stroke();
+      if (fl > 0) { ctx.fillStyle = C(.92 * a); ctx.beginPath(); dot(ctx, x, y, (R - .5) * fl); ctx.fill(); }
+    }
+    font(ctx, Math.round(f * 1.5), 500, true); ctx.fillStyle = C(a); ctx.textBaseline = 'middle';
+    const tx = R + n * sp + R; ctx.textAlign = tx + 60 > w ? 'right' : 'left';
+    ctx.fillText(`${shown} / ${n}`, tx + 60 > w ? w : tx, tx + 60 > w ? y - R - f : y);
+  });
+},
+
+speed(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 12);
+  const rows = [['Freesound metadata', 35 / 60, '35 min'], ['Encode 279k clips to latents', 2.5, '2.5 h'], ['v1 DiT · 200k steps', 30, '≈ 30 h'], ['v2 DiT · 200k steps', 47, '≈ 47 h, estimate', true]];
+  const X1 = w * .78, sc = x => x / 50 * X1, bh = Math.min(h * .07, 30), top = h * .08, gap = (h * .78) / rows.length;
+  font(ctx, f * .9, 400, true); ctx.textBaseline = 'top'; ctx.textAlign = 'center';
+  const axY = top + gap * rows.length - gap * .25;
+  for (let v = 0; v <= 50; v += 10) { ctx.strokeStyle = C(v ? .07 : .4); ctx.beginPath(); ctx.moveTo(sc(v), top - 10); ctx.lineTo(sc(v), axY); ctx.stroke(); ctx.fillStyle = C(.45); ctx.fillText(v + ' h', clamp(sc(v), 12, w - 12), axY + 6); }
+  rows.forEach(([lab, v, txt, est], i) => {
+    const y = top + i * gap + f * 1.6, g = ph(t, .3 + i * .35, 1.8 + i * .35), bw = Math.max(sc(v) * g, 2);
+    font(ctx, f, 500); ctx.fillStyle = C(.85); ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.fillText(lab, 0, y - 6);
+    if (est) { ctx.setLineDash([4, 3]); ctx.strokeStyle = C(.85); ctx.strokeRect(.5, y + .5, bw - 1, bh - 1); ctx.setLineDash([]); }
+    else { ctx.fillStyle = C(.9); ctx.fillRect(0, y, bw, bh); }
+    font(ctx, f, 400, true); ctx.fillStyle = C(.7 * g); ctx.textBaseline = 'middle'; ctx.fillText(txt, bw + 8, y + bh / 2);
+  });
+},
+
+next(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 11);
+  const R = 14, Co = 18, Cn = 6, cell = Math.min(w * .9 / (Co + Cn + 1), h * .52 / R), gx = (w - cell * (Co + Cn + 1)) / 2, gy = h * .08;
+  if (!cache.next) { const r = rng(21); cache.next = { o: Array.from({ length: R * Co }, () => r()), n: Array.from({ length: R * Cn }, () => r()) }; }
+  for (let i = 0; i < R; i++) for (let j = 0; j < Co; j++) {
+    const a = ph(t, .2 + j * .05, .8 + j * .05); ctx.fillStyle = C((.12 + .75 * cache.next.o[i * Co + j]) * a);
+    ctx.fillRect(gx + j * cell, gy + i * cell, cell - 1, cell - 1);
+  }
+  const nx = gx + (Co + 1) * cell, learn = ph(t, 3, 10);
+  for (let i = 0; i < R; i++) for (let j = 0; j < Cn; j++) {
+    const a = ph(t, 1.6 + j * .08, 2.2 + j * .08);
+    ctx.strokeStyle = C(.35 * a); ctx.strokeRect(nx + j * cell + .5, gy + i * cell + .5, cell - 2, cell - 2);
+    ctx.fillStyle = C(.4 * cache.next.n[i * Cn + j] * learn); ctx.fillRect(nx + j * cell, gy + i * cell, cell - 1, cell - 1);
+  }
+  font(ctx, f, 400, true); ctx.fillStyle = C(.6); ctx.textBaseline = 'top'; ctx.textAlign = 'left';
+  ctx.fillText('v2 input weights, copied', gx, gy + R * cell + 10);
+  ctx.fillStyle = C(.6 * ph(t, 1.6, 2.4)); ctx.fillText(learn > .02 ? 'context: learning' : 'context: zero at step 0', nx, gy + R * cell + 10);
+  const y = h * .84, bh = Math.min(h * .07, 30), a = ph(t, 4, 5), W = w * a;
+  ctx.fillStyle = C(.6 * a); ctx.textBaseline = 'bottom'; ctx.fillText('inpainting mask per draw', 0, y - 8);
+  const segs = [[.7, 'generate 70%', 'fill'], [.15, 'continue 15%', 'half'], [.15, 'repaint 15%', 'line']]; let x = 0;
+  segs.forEach(([p, l, kind]) => {
+    const sw = W * p;
+    if (kind === 'fill') { ctx.fillStyle = C(.9 * a); ctx.fillRect(x, y, sw - 2, bh); }
+    else if (kind === 'half') { ctx.fillStyle = C(.4 * a); ctx.fillRect(x, y, sw - 2, bh); }
+    else { ctx.strokeStyle = C(.9 * a); ctx.strokeRect(x + .5, y + .5, sw - 3, bh - 1); }
+    font(ctx, f, 400, true); ctx.fillStyle = C(.6 * a); ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    if (w > 520 || kind === 'fill') ctx.fillText(l, x, y + bh + 6);
+    x += sw;
+  });
+},
+};
+
+const LOOP = { data: 10, vae: 8, qual: 6.5, v12: 9, res: 7.5, speed: 6.5, next: 12, train: 13, chain: 0 };
+let cur = 0, enter = performance.now();
+const canv = slides.map(s => s.querySelector('canvas'));
+slides.forEach(s => [...s.querySelectorAll('.text > *')].forEach((el, i) => el.style.setProperty('--i', i)));
+function size(i) {
+  const cv = canv[i], r = cv.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 2);
+  const W = Math.max(1, Math.round(r.width * d)), H = Math.max(1, Math.round(r.height * d));
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  return { d, w: r.width, h: r.height };
+}
+function frame(now) {
+  const cs = getComputedStyle(document.documentElement);
+  RGB = cs.getPropertyValue('--fg-rgb').trim() || '11,11,11'; BGC = cs.getPropertyValue('--bg-rgb').trim() || '255,255,255';
+  const cv = canv[cur]; const scene = scenes[slides[cur].dataset.scene];
+  if (cv && scene) {
+    const { d, w, h } = size(cur), ctx = cv.getContext('2d');
+    ctx.setTransform(d, 0, 0, d, 0, 0); ctx.clearRect(0, 0, w, h);
+    if (w > 20 && h > 20) { const t0 = (now - enter) / 1000, P = LOOP[slides[cur].dataset.scene]; const t = P ? t0 % P : t0; ctx.globalAlpha = P ? 1 - ph(t, P - .7, P) : 1; ctx.save(); try { scene({ ctx, w, h, t }); } catch (e) { console.error(e); } ctx.restore(); }
+  }
+  requestAnimationFrame(frame);
+}
+const pad = n => String(n).padStart(2, '0');
+function go(i, push = true) {
+  i = clamp(i, 0, slides.length - 1); if (i === cur && push) return;
+  slides[cur].classList.remove('active'); cur = i; slides[cur].classList.add('active');
+  enter = performance.now();
+  document.getElementById('count').textContent = `${pad(cur + 1)} / ${slides.length}`;
+  document.getElementById('progress').style.width = ((cur + 1) / slides.length * 100) + '%';
+  if (push) { try { history.replaceState(null, '', '#s' + (cur + 1)); } catch (e) {} }
+}
+const m = /^#s(\d+)$/.exec(location.hash || '');
+slides[0].classList.add('active'); go(m ? +m[1] - 1 : 0, false);
+document.getElementById('count').textContent = `${pad(cur + 1)} / ${slides.length}`;
+document.getElementById('progress').style.width = ((cur + 1) / slides.length * 100) + '%';
+
+addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter'].includes(e.key)) { e.preventDefault(); go(cur + 1); }
+  else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(e.key)) { e.preventDefault(); go(cur - 1); }
+  else if (e.key === 'Home') go(0); else if (e.key === 'End') go(slides.length - 1);
+  else if (e.key === 'i' || e.key === 'I') invert();
+  else if (e.key === 'r' || e.key === 'R') enter = performance.now();
+  else if (e.key === 'f' || e.key === 'F') full();
+});
+function invert() {
+  const root = document.documentElement, dark = getComputedStyle(root).getPropertyValue('--bg').trim().toLowerCase() === '#0b0b0b';
+  root.setAttribute('data-theme', dark ? 'light' : 'dark');
+}
+function full() { try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(() => {}); } catch (e) {} }
+document.getElementById('prev').addEventListener('click', e => { e.stopPropagation(); go(cur - 1); });
+document.getElementById('next').addEventListener('click', e => { e.stopPropagation(); go(cur + 1); });
+document.getElementById('fs').addEventListener('click', e => { e.stopPropagation(); full(); });
+document.getElementById('deck').addEventListener('click', e => {
+  if (getSelection && String(getSelection()).length) return;
+  if (e.clientX < innerWidth * .25) go(cur - 1); else go(cur + 1);
+});
+let tx = null;
+addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+addEventListener('touchend', e => { if (tx === null) return; const dx = e.changedTouches[0].clientX - tx; if (Math.abs(dx) > 50) go(cur + (dx < 0 ? 1 : -1)); tx = null; }, { passive: true });
+const startLoop = () => requestAnimationFrame(frame);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(startLoop, startLoop); else startLoop();
+})();
+</script>
+
+</body></html>

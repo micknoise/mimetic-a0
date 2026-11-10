@@ -1,0 +1,532 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>MIMETIC Team Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: full-screen slides; text column left, one animated canvas right; monochrome only */
+:root {
+  --bg: #ffffff;
+  --fg: #0b0b0b;
+  --fg-rgb: 11,11,11;
+  --bg-rgb: 255,255,255;
+  --mid: rgba(11,11,11,.58);
+  --faint: rgba(11,11,11,.14);
+  --sans: "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --ease: cubic-bezier(.2,.7,.1,1);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0b0b; --fg: #f4f4f4; --fg-rgb: 244,244,244; --bg-rgb: 11,11,11;
+    --mid: rgba(244,244,244,.6); --faint: rgba(244,244,244,.16); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b0b0b; --fg: #f4f4f4; --fg-rgb: 244,244,244; --bg-rgb: 11,11,11;
+  --mid: rgba(244,244,244,.6); --faint: rgba(244,244,244,.16); color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--sans);
+  font-size: 16px; line-height: 1.5; overflow: hidden;
+  -webkit-font-smoothing: antialiased; transition: background .5s var(--ease), color .5s var(--ease);
+}
+.deck { position: fixed; inset: env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px) 0; }
+.slide {
+  position: absolute; inset: 0;
+  display: grid; grid-template-columns: minmax(0, 22rem) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
+  gap: clamp(1.5rem, 4vw, 4.5rem);
+  padding: clamp(1.5rem, 6vh, 4.5rem) clamp(16px, 5vw, 5rem) clamp(3.5rem, 9vh, 5.5rem);
+  opacity: 0; visibility: hidden; transform: translateY(14px);
+  transition: opacity .8s var(--ease), transform .8s var(--ease), visibility 0s linear .8s;
+}
+.slide.active { opacity: 1; visibility: visible; transform: none; transition: opacity .8s var(--ease), transform .8s var(--ease), visibility 0s; }
+.text { display: flex; flex-direction: column; justify-content: center; gap: 1.1rem; min-width: 0; }
+.viz { position: relative; min-width: 0; min-height: 0; }
+.viz canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.slide.active .text > * { animation: rise 1s var(--ease) both; animation-delay: calc(var(--i, 0) * 90ms + 120ms); }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+.eyebrow { font-family: var(--mono); font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--mid); }
+h1 { font-size: clamp(3rem, 8.5vw, 7.5rem); font-weight: 500; letter-spacing: -.045em; line-height: .95; margin: 0; }
+h2 { font-size: clamp(1.7rem, 3vw, 3rem); font-weight: 500; letter-spacing: -.025em; line-height: 1.12; margin: 0; text-wrap: balance; }
+p { margin: 0; color: var(--mid); max-width: 62ch; font-size: clamp(.95rem, 1.05vw, 1.06rem); }
+p strong, li strong { color: var(--fg); font-weight: 500; }
+ul.facts { list-style: none; margin: 0; padding: 0; display: grid; }
+ul.facts li { border-top: 1px solid var(--faint); padding-block: .55rem; font-size: clamp(.86rem, .95vw, .95rem); color: var(--mid); }
+ul.facts li:last-child { border-bottom: 1px solid var(--faint); }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--fg); }
+.eq { font-family: var(--mono); font-size: clamp(.9rem, 1.05vw, 1.05rem); display: grid; gap: .35rem; padding-block: .3rem; color: var(--fg); }
+.eq span { color: var(--mid); }
+.legend { display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; font-family: var(--mono); font-size: .75rem; color: var(--mid); }
+.legend i { display: inline-block; width: .6rem; height: .6rem; border-radius: 50%; background: var(--fg); margin-right: .4rem; vertical-align: -.02rem; }
+.legend i.ring { background: transparent; border: 1px solid var(--fg); }
+.legend i.x { background: transparent; border-radius: 0; position: relative; }
+.legend i.x::before, .legend i.x::after { content: ""; position: absolute; left: 50%; top: -1px; width: 1px; height: .75rem; background: var(--mid); transform: rotate(45deg); }
+.legend i.x::after { transform: rotate(-45deg); }
+.note { font-family: var(--mono); font-size: .72rem; color: var(--mid); letter-spacing: .02em; }
+
+.slide.title { grid-template-columns: minmax(0,1fr); grid-template-rows: minmax(0,1fr) auto; }
+.slide.title .text { justify-content: end; gap: 1.2rem; }
+.slide.title p { max-width: 56ch; }
+
+.bar {
+  position: fixed; left: 0; right: 0; bottom: env(safe-area-inset-bottom,0px);
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 0 clamp(16px, 5vw, 5rem); height: 3rem;
+  font-family: var(--mono); font-size: .72rem; color: var(--mid); letter-spacing: .06em; z-index: 5;
+}
+.bar .ctrl { display: flex; gap: .4rem; align-items: center; }
+.bar button {
+  font: inherit; color: var(--mid); background: none; border: 1px solid var(--faint); border-radius: 2px;
+  padding: .25rem .6rem; cursor: pointer; transition: color .3s, border-color .3s;
+}
+.bar button:hover { color: var(--fg); border-color: var(--fg); }
+.bar button:focus-visible { outline: 1px solid var(--fg); outline-offset: 2px; }
+.progress { position: fixed; left: 0; bottom: env(safe-area-inset-bottom,0px); height: 1px; background: var(--fg); width: 0; transition: width .8s var(--ease); z-index: 6; }
+.count { font-variant-numeric: tabular-nums; color: var(--fg); }
+
+@media (max-width: 820px) {
+  .slide { grid-template-columns: minmax(0,1fr); grid-template-rows: auto minmax(12rem, 1fr); gap: 1rem; padding-top: 1.5rem; }
+  .text { justify-content: start; gap: .7rem; }
+  ul.facts li:nth-child(n+4) { display: none; }
+  .bar .hide-sm { display: none; }
+}
+</style>
+
+<div class="deck" id="deck">
+
+  <section class="slide title" data-scene="title" id="s1">
+    <div class="viz"><canvas></canvas></div>
+    <div class="text">
+      <div class="eyebrow">AHRC (Arts and Humanities Research Council) · three years · from September 2026</div>
+      <h1>MIMETIC</h1>
+      <p>Open generative models for sound, music and video, trained only on data we have the right to use.</p>
+      <div class="note">Creative Computing Institute, University of the Arts London · Durham University</div>
+    </div>
+  </section>
+
+  <section class="slide" data-scene="own" id="s2">
+    <div class="text">
+      <div class="eyebrow">Framing</div>
+      <h2>We don't compete on scale</h2>
+      <p>The large labs keep ownership. We hand it to the user.</p>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+  <section class="slide" data-scene="src" id="s3">
+    <div class="text">
+      <div class="eyebrow">Data</div>
+      <h2>Every source documented</h2>
+      <p>So far: our generators, pre-1963 UK recordings and Freesound <strong>CC0</strong> (Creative Commons Zero). Anything added must be ours to use.</p>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+  <section class="slide" data-scene="params" id="s4">
+    <div class="text">
+      <div class="eyebrow">Generators</div>
+      <h2>One recipe, thousands of variations</h2>
+      <p>Each generator is a recipe with adjustable settings, such as tempo or brightness. We work through many combinations, so the model learns the full range rather than a few examples.</p>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+  <section class="slide" data-scene="method" id="s5">
+    <div class="text">
+      <div class="eyebrow">Method</div>
+      <h2>One method for sound and video</h2>
+      <p>A frozen <strong>VAE</strong> (variational autoencoder), a small <strong>DiT</strong> (diffusion transformer), then fine-tuning.</p>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+  <section class="slide" data-scene="order" id="s6">
+    <div class="text">
+      <div class="eyebrow">Order</div>
+      <h2>Audio first, then video</h2>
+      <p>Audio on our Blackwell cards. Video on Durham's Grace Hopper nodes.</p>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+  <section class="slide" data-scene="flow" id="s7">
+    <div class="text">
+      <div class="eyebrow">First result</div>
+      <h2>cc0-sampler</h2>
+      <p>A 326M-parameter DiT on clean audio. 200k steps in about 30 hours.</p>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+  <section class="slide" data-scene="fit" id="s8">
+    <div class="text">
+      <div class="eyebrow">Measure</div>
+      <h2>Can it be fine-tuned cleanly?</h2>
+      <p>A narrow fine-tune should approach what the VAE can reconstruct.</p>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+  <section class="slide" data-scene="release" id="s9">
+    <div class="text">
+      <div class="eyebrow">Release</div>
+      <h2>Open, and built for ordinary hardware</h2>
+      <p>Anyone who owns their material can fine-tune privately. Base models not trained on real faces or voices.</p>
+    </div>
+    <div class="viz"><canvas></canvas></div>
+  </section>
+
+</div>
+
+<div class="progress" id="progress"></div>
+<div class="bar">
+  <span>MIMETIC</span>
+  <span class="ctrl">
+    <span class="hide-sm">← → to move · I to invert</span>
+    <button type="button" id="prev" aria-label="Previous slide">←</button>
+    <span class="count" id="count">01 / 09</span>
+    <button type="button" id="next" aria-label="Next slide">→</button>
+    <button type="button" id="fs" class="hide-sm">Full screen</button>
+  </span>
+</div>
+
+<script>
+(() => {
+const slides = [...document.querySelectorAll('.slide')];
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const eo = x => { x = clamp(x); return 1 - Math.pow(1 - x, 3); };
+const eio = x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const ph = (t, a, b) => eo((t - a) / (b - a));
+const lerp = (a, b, u) => a + (b - a) * u;
+function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function gauss(r) { const u = Math.max(r(), 1e-9), v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+let RGB = '11,11,11', BGC = '255,255,255';
+const C = (a = 1) => `rgba(${RGB},${clamp(a)})`;
+const B = (a = 1) => `rgba(${BGC},${clamp(a)})`;
+const SANS = 'Geist, system-ui, -apple-system, "Segoe UI", sans-serif';
+const MONO = '"Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
+const font = (ctx, px, wgt = 400, mono = false) => { ctx.font = `${wgt} ${px}px ${mono ? MONO : SANS}`; };
+const fs = (c, base) => Math.round(clamp(base * c.w / 760, base * .82, base * 1.3));
+const fmt = n => Math.round(n).toLocaleString('en-GB');
+const cache = {};
+
+function dot(ctx, x, y, r) { ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, Math.PI * 2); }
+function arrow(ctx, x1, y1, x2, y2, a, head = 6) {
+  ctx.strokeStyle = C(a); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  const an = Math.atan2(y2 - y1, x2 - x1);
+  ctx.fillStyle = C(a); ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - head * Math.cos(an - .45), y2 - head * Math.sin(an - .45));
+  ctx.lineTo(x2 - head * Math.cos(an + .45), y2 - head * Math.sin(an + .45));
+  ctx.closePath(); ctx.fill();
+}
+
+const scenes = {
+
+title(c) {
+  const { ctx, w, h, t } = c;
+  const x0 = w * .02, W = w * .96, y = h * .2, A = h * .12;
+  const grow = eo(t / 2);
+  const env = u => { let q = (u * 8 - t * .12) % 1; if (q < 0) q += 1; return Math.exp(-q * 4.2) * .85 + .07; };
+  ctx.lineWidth = 1.1; ctx.strokeStyle = C(.88); ctx.beginPath();
+  const n = Math.floor(W * grow / 1.5);
+  for (let i = 0; i <= n; i++) { const x = x0 + i * 1.5, u = (x - x0) / W, v = env(u) * (Math.sin(u * 1900 + t * .9) * .55 + Math.sin(u * 717 - t * .7) * .45) * A; i ? ctx.lineTo(x, y - v) : ctx.moveTo(x, y - v); }
+  ctx.stroke();
+  const N = 8, gap = 10, fw = Math.min((W - gap * (N - 1)) / N, h * .36 * 16 / 9), fh = fw * 9 / 16, fy = h * .5;
+  const sx = x0 + (W - (fw * N + gap * (N - 1))) / 2;
+  for (let k = 0; k < N; k++) {
+    const a = ph(t, .9 + k * .14, 1.5 + k * .14); if (a <= 0) continue;
+    const fx = sx + k * (fw + gap);
+    ctx.strokeStyle = C(.8 * a); ctx.lineWidth = 1; ctx.strokeRect(fx + .5, fy + .5, fw - 1, fh - 1);
+    ctx.strokeStyle = C(.25 * a); ctx.beginPath(); ctx.moveTo(fx + 4, fy + fh * .82); ctx.lineTo(fx + fw - 4, fy + fh * .82); ctx.stroke();
+    let p = (t * .35 + k * .12) % 1;
+    const bx = fx + fw * (.15 + .7 * p), by = fy + fh * .82 - fh * .58 * Math.abs(Math.sin(Math.PI * p * 2)) - fh * .07;
+    ctx.fillStyle = C(a); ctx.beginPath(); dot(ctx, bx, by, fh * .07); ctx.fill();
+  }
+  font(ctx, fs(c, 11), 400, true); ctx.fillStyle = C(.5 * grow); ctx.textBaseline = 'alphabetic';
+  ctx.fillText('sound', x0, Math.max(12, y - A - 10));
+  ctx.fillStyle = C(.5 * ph(t, .9, 1.8)); ctx.fillText('image, in time', sx, fy - 10);
+},
+
+own(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 11);
+  const R = Math.min(w * .2, h * .34), L = [w * .25, h * .44], Rt = [w * .75, h * .44];
+  const a0 = ph(t, 0, 1);
+  ctx.fillStyle = C(a0); ctx.beginPath(); dot(ctx, L[0], L[1], R * .26); ctx.fill();
+  for (let i = 0; i < 36; i++) {
+    const ang = i / 36 * Math.PI * 2, u = (t * .22 + (i * .37) % 1) % 1, r = lerp(R, R * .3, eio(u));
+    ctx.fillStyle = C(a0 * Math.sin(Math.PI * u) * .85); ctx.beginPath(); dot(ctx, L[0] + Math.cos(ang) * r, L[1] + Math.sin(ang) * r, 2.4); ctx.fill();
+  }
+  const a1 = ph(t, .8, 1.8), K = 7;
+  ctx.strokeStyle = C(.8 * a1); ctx.strokeRect(Rt[0] - 7, Rt[1] - 7, 14, 14);
+  for (let i = 0; i < K; i++) {
+    const ang = i / K * Math.PI * 2 - Math.PI / 2, ux = Rt[0] + Math.cos(ang) * R * .82, uy = Rt[1] + Math.sin(ang) * R * .82;
+    const u = (t * .3 + i / K) % 1;
+    ctx.fillStyle = C(a1 * Math.sin(Math.PI * u) * .7); ctx.beginPath(); dot(ctx, lerp(Rt[0], ux, u), lerp(Rt[1], uy, u), 2); ctx.fill();
+    ctx.fillStyle = C(a1); ctx.beginPath(); dot(ctx, ux, uy, 5); ctx.fill();
+    const la = ph(t, 2 + i * .15, 2.6 + i * .15), oa = t * 1.6 + i;
+    ctx.strokeStyle = C(.3 * la); ctx.beginPath(); dot(ctx, ux, uy, 13); ctx.stroke();
+    ctx.fillStyle = C(.9 * la); ctx.beginPath(); dot(ctx, ux + Math.cos(oa) * 13, uy + Math.sin(oa) * 13, 2); ctx.fill();
+  }
+  font(ctx, f, 400, true); ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillStyle = C(.6 * a0); ctx.fillText('platform', L[0], L[1] + R + 16); ctx.fillStyle = C(.45 * a0); ctx.fillText('your data in, model stays theirs', L[0], L[1] + R + 16 + f * 1.6);
+  ctx.fillStyle = C(.6 * a1); ctx.fillText('MIMETIC', Rt[0], Rt[1] + R + 16); ctx.fillStyle = C(.45 * a1); ctx.fillText('model out, your data stays yours', Rt[0], Rt[1] + R + 16 + f * 1.6);
+},
+
+src(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 12);
+  const bx0 = w * .7, bx1 = w - 2, by0 = h * .28, by1 = h * .72;
+  const S = [['generators', h * .14, 'even'], ['pre-1963 recordings', h * .5, 'noisy'], ['Freesound CC0', h * .86, 'random']];
+  const r = rng(17);
+  S.forEach(([lab, sy, kind], si) => {
+    const a = ph(t, si * .3, .8 + si * .3), ty = lerp(by0 + 20, by1 - 20, si / 2), cx = w * .42;
+    ctx.strokeStyle = C(.1 * a); ctx.beginPath(); ctx.moveTo(0, sy); ctx.quadraticCurveTo(cx, sy, bx0, ty); ctx.stroke();
+    font(ctx, f, 500); ctx.fillStyle = C(.85 * a); ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.fillText(lab, 0, sy - 8);
+    const n = 14;
+    for (let i = 0; i < n; i++) {
+      const off = kind === 'even' ? i / n : r(), u = (t * .16 + off) % 1;
+      const q = 1 - u, x = q * q * 0 + 2 * q * u * cx + u * u * bx0, y0 = q * q * sy + 2 * q * u * sy + u * u * ty;
+      const jit = kind === 'noisy' ? Math.sin(i * 13.1 + t * 9) * 5 + Math.sin(i * 5.3 + t * 23) * 3 : 0;
+      const al = a * Math.min(1, u * 6) * Math.min(1, (1 - u) * 8);
+      ctx.fillStyle = C(.9 * al);
+      if (kind === 'even') ctx.fillRect(x - 3, y0 - 3, 6, 6);
+      else { ctx.beginPath(); dot(ctx, x, y0 + jit, kind === 'noisy' ? 2.2 + Math.abs(jit) * .25 : 2.8); ctx.fill(); }
+    }
+  });
+  const ab = ph(t, .6, 1.4);
+  ctx.strokeStyle = C(.85 * ab); ctx.strokeRect(bx0 + .5, by0 + .5, bx1 - bx0 - 1, by1 - by0 - 1);
+  const cols = 10, rows = 7, cw = (bx1 - bx0 - 20) / cols, ch = (by1 - by0 - 40) / rows, fill = Math.floor(((t % 12) / 11) * cols * rows);
+  for (let k = 0; k < cols * rows; k++) { const i = k % cols, j = Math.floor(k / cols); ctx.fillStyle = C((k < fill ? .75 : .07) * ab); ctx.fillRect(bx0 + 10 + i * cw + 1, by0 + 10 + j * ch + 1, cw - 3, ch - 3); }
+  font(ctx, f, 400, true); ctx.fillStyle = C(.55 * ab); ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.fillText('training data', bx0 + 10, by1 - 8);
+},
+
+params(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 11);
+  const cols = 9, rows = 6, pad = f * 2.4, cell = Math.min((w - pad) / cols, (h - pad * 1.6) / rows), ox = pad + (w - pad - cell * cols) / 2, oy = 0;
+  const hal = (i, b) => { let fr = 1, r = 0; while (i > 0) { fr /= b; r += fr * (i % b); i = Math.floor(i / b); } return r; };
+  const T = t % 14, k = Math.floor(T * 1.4) + 1, sampled = new Set();
+  for (let i = 1; i <= k; i++) sampled.add(Math.min(cols - 1, Math.floor(hal(i, 2) * cols)) + ',' + Math.min(rows - 1, Math.floor(hal(i, 3) * rows)));
+  const cur = Math.min(cols - 1, Math.floor(hal(k, 2) * cols)) + ',' + Math.min(rows - 1, Math.floor(hal(k, 3) * rows));
+  for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+    const a = ph(t, .1 + (i + j) * .05, .7 + (i + j) * .05); if (a <= 0) continue;
+    const cx = ox + (i + .5) * cell, cy = oy + (j + .5) * cell, s = cell * .34, key = i + ',' + j, on = key === cur, was = sampled.has(key);
+    const A = 1 + i * .375, Bf = 1 + j * .4, d = t * .5 + j * .3;
+    ctx.strokeStyle = C(a * (on ? 1 : was ? .7 : .22)); ctx.lineWidth = on ? 1.8 : 1; ctx.beginPath();
+    for (let q = 0; q <= 120; q++) { const s2 = q / 120 * Math.PI * 2; const x = cx + Math.sin(A * s2 + d) * s, y = cy + Math.sin(Bf * s2) * s; q ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+    ctx.stroke(); ctx.lineWidth = 1;
+    if (on) { ctx.strokeStyle = C(.5); ctx.strokeRect(cx - cell * .47, cy - cell * .47, cell * .94, cell * .94); }
+  }
+  font(ctx, f, 400, true); ctx.fillStyle = C(.5); ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('setting A →', ox, oy + rows * cell + 8);
+  ctx.save(); ctx.translate(ox - 10, oy + rows * cell); ctx.rotate(-Math.PI / 2); ctx.textBaseline = 'bottom'; ctx.fillText('setting B →', 0, 0); ctx.restore();
+  ctx.textAlign = 'right'; ctx.fillText(`${sampled.size} of ${cols * rows} variations made`, ox + cols * cell, oy + rows * cell + 8);
+},
+
+method(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 14);
+  const m = (t % 10) / 10, vid = m > .5 ? 1 : 0, sw = Math.min(1, Math.abs(m - .5) * 20, Math.min(m, 1 - m) * 20);
+  const L = [['audio', 'video frames'], ['VAE encoder', 'VAE encoder'], ['latent', 'latent'], ['DiT', 'DiT'], ['VAE decoder', 'VAE decoder'], ['fine-tune', 'fine-tune']];
+  const SUB = [['48 kHz stereo', 'clips'], ['ACE-Step 1.5 · frozen', 'Wan 2.1 · frozen'], ['compact', 'compact'], ['small', 'small'], ['carries fidelity', 'carries fidelity'], ['your material', 'your material']];
+  const P = [[.09, .36], [.31, .36], [.51, .36], [.70, .36], [.90, .36], [.70, .74]];
+  const bx = P.map(([fx, fy], i) => {
+    font(ctx, f, 500); const tw = Math.max(ctx.measureText(L[i][0]).width, ctx.measureText(L[i][1]).width);
+    font(ctx, f * .78, 400, true); const sw2 = Math.max(ctx.measureText(SUB[i][0]).width, ctx.measureText(SUB[i][1]).width);
+    const bw = Math.max(tw, sw2) + f * 1.4, bh = f * 3.4;
+    return { i, x: clamp(fx * w, bw / 2 + 2, w - bw / 2 - 2), y: fy * h, w: bw, h: bh, a: ph(t, .1 + i * .18, .7 + i * .18) };
+  });
+  const port = (b, tx, ty, gap = 5) => { const dx = tx - b.x, dy = ty - b.y; const s = Math.min((b.w / 2 + gap) / Math.max(Math.abs(dx), 1e-6), (b.h / 2 + gap) / Math.max(Math.abs(dy), 1e-6)); return [b.x + dx * s, b.y + dy * s]; };
+  [[0, 1], [1, 2], [2, 3], [3, 4], [5, 3]].forEach(([i, j], k) => {
+    const A = bx[i], Bb = bx[j], a = Math.min(A.a, Bb.a); if (a <= 0) return;
+    const [x1, y1] = port(A, Bb.x, Bb.y), [x2, y2] = port(Bb, A.x, A.y);
+    arrow(ctx, x1, y1, lerp(x1, x2, a), lerp(y1, y2, a), .45 * a);
+    if (a > .98) for (let q = 0; q < 2; q++) { const u = (t * .35 + q * .5 + k * .19) % 1; ctx.fillStyle = C(Math.sin(Math.PI * u)); ctx.beginPath(); dot(ctx, lerp(x1, x2, u), lerp(y1, y2, u), 2.6); ctx.fill(); }
+  });
+  bx.forEach(b => {
+    if (b.a <= 0) return; const hl = b.i === 3;
+    ctx.save(); ctx.globalAlpha *= b.a;
+    ctx.fillStyle = hl ? C(1) : B(1); ctx.strokeStyle = C(.9); ctx.beginPath(); ctx.rect(b.x - b.w / 2, b.y - b.h / 2, b.w, b.h); ctx.fill(); ctx.stroke();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const ch = L[b.i][0] !== L[b.i][1] || SUB[b.i][0] !== SUB[b.i][1];
+    font(ctx, f, 500); ctx.fillStyle = hl ? B(1) : C(L[b.i][0] !== L[b.i][1] ? sw : 1); ctx.fillText(L[b.i][vid], b.x, b.y - f * .55);
+    font(ctx, f * .78, 400, true); ctx.fillStyle = hl ? B(.75) : C((SUB[b.i][0] !== SUB[b.i][1] ? sw : 1) * .55); ctx.fillText(SUB[b.i][vid], b.x, b.y + f * .75);
+    ctx.restore();
+  });
+  font(ctx, fs(c, 22), 500, true); ctx.fillStyle = C(.95 * sw); ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText(vid ? 'video' : 'audio', 0, 0);
+},
+
+order(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 12);
+  const half = w / 2, a0 = ph(t, 0, .8), a1 = ph(t, .5, 1.3);
+  const n = 40, sw = half * .82, cw = sw / n, sy = h * .42, sh = Math.min(h * .08, 30), pa = (t % 1.6) / 1.6;
+  for (let i = 0; i < n; i++) { ctx.fillStyle = C((i / n < pa ? .85 : .1) * a0); ctx.fillRect(i * cw, sy, Math.max(cw - 1, 1), sh); }
+  font(ctx, f, 500); ctx.fillStyle = C(a0); ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.fillText('audio · 1D', 0, sy - 12);
+  font(ctx, f, 400, true); ctx.fillStyle = C(.5 * a0); ctx.textBaseline = 'top'; ctx.fillText('a run costs a GPU-day', 0, sy + sh + 12);
+  font(ctx, fs(c, 24), 500, true); ctx.fillStyle = C(.95 * a0); ctx.fillText(`${Math.floor(t / 1.6)} runs`, 0, sy + sh + 12 + f * 2);
+  const vx = half + w * .04, F = 7, gx = 8, gy = 5, fw = Math.min(half * .62, h * .5), fh = fw * .56, dx = fw * .06, dy = -fh * .09, vy = h * .5, pv = (t % 12) / 12;
+  for (let k = F - 1; k >= 0; k--) {
+    const x = vx + k * dx, y = vy + k * dy;
+    ctx.fillStyle = B(1); ctx.fillRect(x, y, fw, fh); ctx.strokeStyle = C(.7 * a1); ctx.strokeRect(x + .5, y + .5, fw - 1, fh - 1);
+    const cells = gx * gy, done = Math.floor(clamp(pv * F - (F - 1 - k)) * cells);
+    for (let q = 0; q < cells; q++) { const i = q % gx, j = Math.floor(q / gx); ctx.fillStyle = C((q < done ? .8 : .06) * a1); ctx.fillRect(x + 4 + i * (fw - 8) / gx, y + 4 + j * (fh - 8) / gy, (fw - 8) / gx - 2, (fh - 8) / gy - 2); }
+  }
+  const tyv = vy + F * dy - 12;
+  font(ctx, f, 500); ctx.fillStyle = C(a1); ctx.textAlign = 'left'; ctx.textBaseline = 'bottom'; ctx.fillText('video · 3D', vx, tyv);
+  font(ctx, f, 400, true); ctx.fillStyle = C(.5 * a1); ctx.textBaseline = 'top'; ctx.fillText('a run costs a GPU-week', vx, vy + fh + 12);
+  font(ctx, fs(c, 24), 500, true); ctx.fillStyle = C(.95 * a1); ctx.fillText(`${Math.floor(t / 12)} runs`, vx, vy + fh + 12 + f * 2);
+},
+
+flow(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 11);
+  const P = 240;
+  if (!cache.flow) {
+    const r = rng(3); const pts = [];
+    for (let i = 0; i < P; i++) {
+      const k = i % 3, nx = gauss(r), ny = gauss(r); let dx, dy;
+      if (k === 0) { const a = r() * 6.283; dx = Math.cos(a); dy = Math.sin(a); }
+      else if (k === 1) { dx = (r() - .5) * 2; dy = gauss(r) * .08; }
+      else { dx = gauss(r) * .45; dy = gauss(r) * .45; }
+      pts.push({ k, nx, ny, dx, dy });
+    }
+    cache.flow = pts;
+  }
+  const cxn = w * .22, cyn = h * .45, sg = h * .11;
+  const cl = [[w * .8, h * .16], [w * .8, h * .45], [w * .8, h * .74]];
+  const shp = [h * .05, w * .09, h * .045];
+  const tc = t % 8, s = eio((tc - 1.2) / 4.4);
+  const pos = (q, u) => { const [cx, cy] = cl[q.k]; const dx = q.k === 1 ? q.dx * shp[1] : q.dx * shp[q.k], dy = q.k === 1 ? q.dy * h * .2 : q.dy * shp[q.k];
+    return [lerp(cxn + q.nx * sg, cx + dx, u), lerp(cyn + q.ny * sg, cy + dy, u)]; };
+  const ap = ph(t, 0, 1);
+  ctx.strokeStyle = C(.055 * ap); ctx.lineWidth = 1; ctx.beginPath();
+  cache.flow.forEach(q => { const [x1, y1] = pos(q, 0), [x2, y2] = pos(q, 1); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); }); ctx.stroke();
+  ctx.fillStyle = C(.9 * ap); ctx.beginPath(); cache.flow.forEach(q => { const [x, y] = pos(q, s); dot(ctx, x, y, 2); }); ctx.fill();
+  font(ctx, f, 400, true); ctx.fillStyle = C(.55); ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText('noise', cxn, cyn + sg * 3 + 6);
+  ['808 kick', 'house bassline', 'warm pad'].forEach((l, i) => ctx.fillText(l, cl[i][0], cl[i][1] + shp[0] * 1.25 + 4));
+},
+
+fit(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 11);
+  const L = f * 1.8, R = w - 4, T = h * .1, Bt = h * .86, H = Bt - T;
+  const Y = v => Bt - v * H, X = u => lerp(L, R, u);
+  ctx.strokeStyle = C(.4); ctx.beginPath(); ctx.moveTo(L, T); ctx.lineTo(L, Bt); ctx.lineTo(R, Bt); ctx.stroke();
+  ctx.setLineDash([5, 4]); ctx.strokeStyle = C(.8); ctx.beginPath(); ctx.moveTo(L, Y(.88)); ctx.lineTo(R, Y(.88)); ctx.stroke(); ctx.setLineDash([]);
+  font(ctx, f, 400, true); ctx.fillStyle = C(.6); ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillText('VAE reconstruction ceiling', R, Y(.88) - 6);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top'; ctx.fillText('base checkpoint', L + 8, Y(.28) + 6);
+  ctx.fillStyle = C(1); ctx.beginPath(); dot(ctx, L, Y(.28), 4); ctx.fill();
+  const tc = t % 9, p = eio((tc - .4) / 6);
+  for (let k = 0; k < 5; k++) {
+    const top = .83 - k * .025, rate = 3 + k * 1.3;
+    ctx.strokeStyle = C(.9 - k * .1); ctx.lineWidth = 1.3; ctx.beginPath();
+    for (let i = 0; i <= 100 * p; i++) { const u = i / 100, v = .28 + (top - .28) * (1 - Math.exp(-u * rate)); i ? ctx.lineTo(X(u), Y(v)) : ctx.moveTo(X(u), Y(v)); }
+    ctx.stroke();
+    if (p > 0) { const v = .28 + (top - .28) * (1 - Math.exp(-p * rate)); ctx.fillStyle = C(.9); ctx.beginPath(); dot(ctx, X(p), Y(v), 2.5); ctx.fill(); }
+  }
+  ctx.lineWidth = 1; ctx.fillStyle = C(.5); ctx.textAlign = 'right'; ctx.textBaseline = 'top'; ctx.fillText('fine-tune steps →', R, Bt + 8);
+  ctx.save(); ctx.translate(L - 8, T); ctx.rotate(-Math.PI / 2); ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'; ctx.fillText('in-style quality →', 0, 0); ctx.restore();
+  ctx.textAlign = 'left'; ctx.fillText('five narrow styles, one base', L + 8, Bt + 8);
+},
+
+open(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 19);
+  const items = ['Variety without one generator\'s habits', 'Fidelity in the decoder: 24-bit audio, 12-bit video', 'Does the method carry over to video?'];
+  const gap = Math.min(h * .26, f * 5), y0 = (h - gap * (items.length - 1)) / 2;
+  items.forEach((s, i) => {
+    const a = ph(t, .3 + i * .5, 1.2 + i * .5), y = y0 + i * gap, pulse = (t * .6 + i * .33) % 1;
+    ctx.strokeStyle = C(a * .9); ctx.lineWidth = 1.2; ctx.beginPath(); dot(ctx, f * .7, y, f * .42); ctx.stroke();
+    ctx.strokeStyle = C(a * .5 * (1 - pulse)); ctx.lineWidth = 1; ctx.beginPath(); dot(ctx, f * .7, y, f * .42 + pulse * f * 1.1); ctx.stroke();
+    font(ctx, f, 400); ctx.fillStyle = C(a); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(s, f * 2.2 + (1 - a) * 12, y);
+  });
+},
+
+release(c) {
+  const { ctx, w, h, t } = c; const f = fs(c, 11);
+  const cx = w * .5, cy = h * .46, rx = w * .4, ry = h * .36, K = 10, a0 = ph(t, 0, .8);
+  ctx.fillStyle = C(a0); ctx.fillRect(cx - 9, cy - 9, 18, 18);
+  font(ctx, f, 400, true); ctx.fillStyle = C(.55 * a0); ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText('models · code · data · tools', cx, cy + 18);
+  for (let i = 0; i < K; i++) {
+    const ang = i / K * Math.PI * 2 - Math.PI / 2, x = cx + Math.cos(ang) * rx, y = cy + Math.sin(ang) * ry;
+    const la = ph(t, .4 + i * .1, 1 + i * .1); if (la <= 0) continue;
+    const lw = 26, lh = 16;
+    ctx.strokeStyle = C(.85 * la); ctx.strokeRect(x - lw / 2 + .5, y - lh / 2 + .5, lw - 1, lh - 1);
+    ctx.beginPath(); ctx.moveTo(x - lw / 2 - 5, y + lh / 2 + 3); ctx.lineTo(x + lw / 2 + 5, y + lh / 2 + 3); ctx.stroke();
+    const u = (t * .3 + i / K) % 1, sx = lerp(cx, x, eio(u)), sy = lerp(cy, y, eio(u));
+    ctx.fillStyle = C(.8 * Math.sin(Math.PI * u) * la); ctx.fillRect(sx - 3, sy - 3, 6, 6);
+    const fa = ph(t, 1.8 + i * .15, 2.4 + i * .15), oa = t * 1.4 + i * 2;
+    ctx.strokeStyle = C(.25 * fa); ctx.beginPath(); dot(ctx, x, y, 22); ctx.stroke();
+    ctx.fillStyle = C(.9 * fa); ctx.beginPath(); dot(ctx, x + Math.cos(oa) * 22, y + Math.sin(oa) * 22, 2.2); ctx.fill();
+  }
+  const ta = ph(t, 3, 4); ctx.fillStyle = C(.45 * ta); ctx.textBaseline = 'bottom'; ctx.fillText('each loop: a private fine-tune', cx, h - 2);
+},
+};
+
+const LOOP = { src: 0, params: 0, fit: 0 };
+let cur = 0, enter = performance.now();
+const canv = slides.map(s => s.querySelector('canvas'));
+slides.forEach(s => [...s.querySelectorAll('.text > *')].forEach((el, i) => el.style.setProperty('--i', i)));
+function size(i) {
+  const cv = canv[i], r = cv.getBoundingClientRect(), d = Math.min(devicePixelRatio || 1, 2);
+  const W = Math.max(1, Math.round(r.width * d)), H = Math.max(1, Math.round(r.height * d));
+  if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+  return { d, w: r.width, h: r.height };
+}
+function frame(now) {
+  const cs = getComputedStyle(document.documentElement);
+  RGB = cs.getPropertyValue('--fg-rgb').trim() || '11,11,11'; BGC = cs.getPropertyValue('--bg-rgb').trim() || '255,255,255';
+  const cv = canv[cur]; const scene = scenes[slides[cur].dataset.scene];
+  if (cv && scene) {
+    const { d, w, h } = size(cur), ctx = cv.getContext('2d');
+    ctx.setTransform(d, 0, 0, d, 0, 0); ctx.clearRect(0, 0, w, h);
+    if (w > 20 && h > 20) { const t0 = (now - enter) / 1000, P = LOOP[slides[cur].dataset.scene]; const t = P ? t0 % P : t0; ctx.globalAlpha = P ? 1 - ph(t, P - .7, P) : 1; ctx.save(); try { scene({ ctx, w, h, t }); } catch (e) { console.error(e); } ctx.restore(); }
+  }
+  requestAnimationFrame(frame);
+}
+const pad = n => String(n).padStart(2, '0');
+function go(i, push = true) {
+  i = clamp(i, 0, slides.length - 1); if (i === cur && push) return;
+  slides[cur].classList.remove('active'); cur = i; slides[cur].classList.add('active');
+  enter = performance.now();
+  document.getElementById('count').textContent = `${pad(cur + 1)} / ${slides.length}`;
+  document.getElementById('progress').style.width = ((cur + 1) / slides.length * 100) + '%';
+  if (push) { try { history.replaceState(null, '', '#s' + (cur + 1)); } catch (e) {} }
+}
+const m = /^#s(\d+)$/.exec(location.hash || '');
+slides[0].classList.add('active'); go(m ? +m[1] - 1 : 0, false);
+document.getElementById('count').textContent = `${pad(cur + 1)} / ${slides.length}`;
+document.getElementById('progress').style.width = ((cur + 1) / slides.length * 100) + '%';
+
+addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter'].includes(e.key)) { e.preventDefault(); go(cur + 1); }
+  else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(e.key)) { e.preventDefault(); go(cur - 1); }
+  else if (e.key === 'Home') go(0); else if (e.key === 'End') go(slides.length - 1);
+  else if (e.key === 'i' || e.key === 'I') invert();
+  else if (e.key === 'r' || e.key === 'R') enter = performance.now();
+  else if (e.key === 'f' || e.key === 'F') full();
+});
+function invert() {
+  const root = document.documentElement, dark = getComputedStyle(root).getPropertyValue('--bg').trim().toLowerCase() === '#0b0b0b';
+  root.setAttribute('data-theme', dark ? 'light' : 'dark');
+}
+function full() { try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(() => {}); } catch (e) {} }
+document.getElementById('prev').addEventListener('click', e => { e.stopPropagation(); go(cur - 1); });
+document.getElementById('next').addEventListener('click', e => { e.stopPropagation(); go(cur + 1); });
+document.getElementById('fs').addEventListener('click', e => { e.stopPropagation(); full(); });
+document.getElementById('deck').addEventListener('click', e => {
+  if (getSelection && String(getSelection()).length) return;
+  if (e.clientX < innerWidth * .25) go(cur - 1); else go(cur + 1);
+});
+let tx = null;
+addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+addEventListener('touchend', e => { if (tx === null) return; const dx = e.changedTouches[0].clientX - tx; if (Math.abs(dx) > 50) go(cur + (dx < 0 ? 1 : -1)); tx = null; }, { passive: true });
+const startLoop = () => requestAnimationFrame(frame);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(startLoop, startLoop); else startLoop();
+})();
+</script>
+
+</body></html>
